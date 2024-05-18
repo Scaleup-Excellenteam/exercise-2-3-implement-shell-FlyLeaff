@@ -1,11 +1,11 @@
-#include <iostream>
-using namespace std;
-
-
+#include "Shell.h"
 
 
 int main()
 {
-	// Create a new instance of the class
-	cout << "Creating a new instance of the class" << endl;
+
+	Shell shell;
+	shell.run();
+
+	return 0;
 }

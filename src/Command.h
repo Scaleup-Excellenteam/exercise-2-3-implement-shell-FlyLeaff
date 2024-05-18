@@ -9,11 +9,8 @@ class Command
 {
 
 	public:
-		Command(string command);
-		~Command();
-		void parse(string& input);
 
-		void run();
+		static bool findExe(const string &command, string &fullPath);
 
 	private:
 		string command;

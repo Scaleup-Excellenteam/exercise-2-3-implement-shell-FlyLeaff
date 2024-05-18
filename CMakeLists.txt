@@ -3,12 +3,11 @@ cmake_minimum_required(VERSION 3.10)
 # Set the project name
 project(ExcellenteamShell)
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+# Specify the source files
+set(SOURCES src/main.cpp src/Shell.cpp src/Command.cpp)
 
 # Add the executable
-add_executable(ExcellenteamShell src/main.cpp "src/header files/Shell.h" "src/Command.cpp" "src/header files/Command.h")
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Include directories
-target_include_directories(ExcellenteamShell PRIVATE include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
