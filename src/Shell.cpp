@@ -10,6 +10,10 @@
 using namespace std;
 namespace fs = filesystem;
 
+
+// This method translates the input string 
+// into the string vector for the execv that will be called in run.
+// its used to split the command and args of each input line
 void Shell::parseCommand(const string &input, vector<string> &args) {
     stringstream ss(input);
     string token;
@@ -21,7 +25,8 @@ void Shell::parseCommand(const string &input, vector<string> &args) {
 void Shell::run() 
 {
     string command;
-    while (true) {
+    while (true) 
+    {
         cout << "Enter command: ";
         getline(cin, command);
 
@@ -31,7 +36,8 @@ void Shell::run()
         parseCommand(command, args);
 
         string fullPath;
-        if (!Command::findExe(args[0], fullPath)) {
+        if (!Command::findExe(args[0], fullPath)) 
+        {
             cerr << "Command not found: " << args[0] << endl;
             continue;
         }
