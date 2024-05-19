@@ -1,28 +1,37 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-#include <map>
-#include <vector>
 #include <string>
-#include "Command.h"
+#include <vector>
+#include <map>
+#include <sys/types.h>
 
-class Shell {
+class Shell 
+{
 public:
+
+
     void run();
-    void parseCommand(const string &input, vector<string> &args);
-    void myJobs();
-    void addJob(pid_t,const string& command);
+
 
 private:
-    struct Job
+    struct Job 
     {
         pid_t pid;
-        string command,status;
+        std::string command;
+        std::string status;
     };
-    map<pid_t,Job> bgJobs;
 
 
+    std::map<pid_t, Job> bgJobs;
+    
+    void parseCommand(const std::string &input, std::vector<std::string> &args);
+    void addJob(pid_t pid, const std::string &cmd);
     void updateJobStatus();
+    void myJobs();
+    void inputLoop();
+    void myHistory();
+    
 };
 
 #endif // SHELL_H
