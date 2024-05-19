@@ -16,8 +16,10 @@ namespace fs = filesystem;
 
 
 
-
-void Shell::parseCommand(const string &input, vector<string> &args) {
+// this function takes a string and a vector of strings as input and parses
+// the string into tokens and stores them in the vector
+void Shell::parseCommand(const string &input, vector<string> &args) 
+{
     stringstream ss(input);
     string token;
     while (ss >> token) {
@@ -25,12 +27,15 @@ void Shell::parseCommand(const string &input, vector<string> &args) {
     }
 }
 
-void Shell::addJob(pid_t pid, const string& cmd) {
+void Shell::addJob(pid_t pid, const string& cmd) 
+{
     Job job = {pid, cmd, "Running"};
     bgJobs[pid] = job;
 }
 
-void Shell::updateJobStatus() {
+// this function goes over the bgJobs map and updates the status of each job
+void Shell::updateJobStatus() 
+{
     for (auto it = bgJobs.begin(); it != bgJobs.end();) {
         int status;
         pid_t result = waitpid(it->first, &status, WNOHANG);
@@ -48,23 +53,33 @@ void Shell::updateJobStatus() {
         }
     }
 }
-
-void Shell::myJobs() {
+// this simply goes over the pid - string map and prints out the pid, command and status of each job
+void Shell::myJobs() 
+{
     updateJobStatus();
     for (const auto& job : bgJobs) {
         cout << "PID: " << job.second.pid << ", Command: " << job.second.command << ", Status: " << job.second.status << endl;
     }
 }
 
-void Shell::inputLoop() {
+
+// my main method for this shell program
+// it goes over the input string and processes it accordingly
+// it checks for in program commands and also path commands
+void Shell::inputLoop() 
+{
     while (true) {
         char* input = readline("shell> ");
         if (input == nullptr) break;
         
+
+
         string command(input);
         add_history(command.c_str());
         Utils::addCommandToHistory(command);
       
+
+
         if (command == "") continue;
         if (command == "exit") break;
         if (command == "myjobs") 
@@ -80,11 +95,12 @@ void Shell::inputLoop() {
 
         command = Utils::parseEnvironmentVariables(command);
 
-
+        //process command
         vector<string> args;
         parseCommand(command, args);
         bool runInBackground = false;
-        if (!args.empty() && args.back().back() == '&') {
+        if (!args.empty() && args.back().back() == '&') 
+        {
             runInBackground = true;
             if (args.back().length() == 1) {
                 args.pop_back();
@@ -93,20 +109,26 @@ void Shell::inputLoop() {
             }
         }
 
+
+        //check in path for command
         string fullPath;
-        if (!Utils::findExe(args[0], fullPath)) {
+        if (!Utils::findExe(args[0], fullPath)) 
+        {
             cerr << "Command not found: " << args[0] << endl;
             continue;
         }
 
         vector<char*> c_args;
-        for (const auto& arg : args) {
+        for (const auto& arg : args) 
             c_args.push_back(const_cast<char*>(arg.c_str()));
-        }
+        
         c_args.push_back(nullptr);
 
+
+        //fork to child process and execute via execv
         pid_t pID = fork();
-        switch (pID) {
+        switch (pID) 
+        {
             case -1:
                 perror("fork failed");
                 break;
@@ -116,20 +138,24 @@ void Shell::inputLoop() {
                 perror("execv failed");
                 exit(-1);
             default:
-                if (runInBackground) {
+                if (runInBackground) 
+                {
                     addJob(pID, command);
                     cout << "Running process in background, PID: " << pID << endl;
-                } else {
+                } 
+                else 
                     waitpid(pID, nullptr, 0);
-                }
+                
                 break;
         }
     }
 }
 
-void Shell::run() {
-    system("reset");
-        rl_clear_history();
+void Shell::run() 
+{
+    system("reset"); // this is in place due to an issue with my vscode terminal and can be removed
+    //TODO remove this shit
+
 
     Utils::resetHistoryFile();
     thread inputThread(&Shell::inputLoop, this);
@@ -140,6 +166,7 @@ void Shell::run() {
 }
 
 
-void Shell::myHistory() {
+void Shell::myHistory() 
+{
     Utils::showHistory();
 }

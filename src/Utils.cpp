@@ -2,11 +2,14 @@
 #include <iostream>
 #include <sstream>
 #include <filesystem>
+#include <fstream>
+
 
 using namespace std;
 namespace fs = filesystem;
 
 const string Utils::historyPath = "/tmp/myshell_history.txt";
+
 bool Utils::findExe(const string &command, string &fullPath) 
 {
     // this section gets the path enviroment variables value to search if the command is in there
@@ -31,8 +34,10 @@ bool Utils::findExe(const string &command, string &fullPath)
     return false;
 }
 
-#include <fstream>
+// the next 3 functions are relatively simple
+// they create a file, write to it, and read from it
 
+// this function creates a new file and writes to it
 void Utils::resetHistoryFile() 
 {
     ofstream historyFile(historyPath);
@@ -42,7 +47,7 @@ void Utils::resetHistoryFile()
     }
     historyFile.close();
 }
-
+// this function writes to the history file
 void Utils::addCommandToHistory(const string &command) 
 {
     ofstream historyFile(historyPath, ios::app);
@@ -54,7 +59,7 @@ void Utils::addCommandToHistory(const string &command)
     historyFile.close();
 }
 
-
+// this function reads from the history file and prints it to the console
 void Utils::showHistory() 
 {
     ifstream historyFile(historyPath);
@@ -73,7 +78,8 @@ void Utils::showHistory()
 
 // long ass function with some help from gpt :D
 // it goes over the whole input string and if theres a $ or ${} in it
-// the function translates that into whats in the actual variable.
+// the function translates that into whats in the actual variable and replaces it
+// in the original string command.
 string Utils::parseEnvironmentVariables(const std::string &command) 
 {
     std::string result = command;
