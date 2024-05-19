@@ -1,0 +1,6 @@
+libreadline-dev
+g++
+gcc
+libtinfo6
+pkg-config
+
