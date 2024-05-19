@@ -22,6 +22,27 @@ void Shell::parseCommand(const string &input, vector<string> &args) {
     }
 }
 
+void Shell::addJob(pid_t pid, const string& cmd)
+{
+
+    Job job = {pid,cmd, "Running"};
+    bgJobs[pid] = job;
+}
+
+void Shell::updateJobStatus()
+{
+    
+}
+void Shell::myJobs() {
+    updateJobStatus();
+    for (const auto& job : bgJobs) {
+        cout << "PID: " << job.second.pid << ", Command: " << job.second.command << ", Status: " << job.second.status << endl;
+    }
+}
+
+// the main method for this shell essentially
+// it takes care of looping till exit is entered, taking inputs from user and delegating 
+// tasks to the sub-processes 
 void Shell::run() 
 {
     string command;
@@ -31,9 +52,21 @@ void Shell::run()
         getline(cin, command);
 
         if (command == "exit") break;
+        if (command == "myjobs")
+        {
+            myJobs();
+            continue;
+        }
 
+        
         vector<string> args;
         parseCommand(command, args);
+        bool runInBackground = false;
+        if(!args.empty() && args.back() == "&")
+        {
+            runInBackground = true;
+            args.pop_back(); // to get rid of the '&'
+        }
 
         string fullPath;
         if (!Command::findExe(args[0], fullPath)) 
@@ -44,14 +77,16 @@ void Shell::run()
 
         // Convert vector<string> to array of char* for execv
         vector<char*> c_args;
-        for (size_t i = 0; i < args.size(); ++i) {
+        for (size_t i = 0; i < args.size(); ++i) 
+        {
             c_args.push_back(const_cast<char*>(args[i].c_str()));
         }
         c_args.push_back(nullptr);
 
         pid_t pID = fork();
 
-        switch (pID) {
+        switch (pID) 
+        {
             case -1:
                 perror("fork failed");
                 break;
