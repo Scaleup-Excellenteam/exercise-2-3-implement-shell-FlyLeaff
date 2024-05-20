@@ -39,6 +39,14 @@ Ending any command with '&' will make it run in the background via another proce
 
 Use "exit" to exit the shell
 
+### help 
+
+use "help" to get a function list
+
+### who
+
+gives me some credit and prints a link to the github page
+
 ---
 
 For detailed information on how to build and run the project, please refer to the sections below.
