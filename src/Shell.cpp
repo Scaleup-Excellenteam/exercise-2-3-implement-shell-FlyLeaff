@@ -193,5 +193,5 @@ void Shell::help()
 
 void Shell::who()
 {
-    cout << "Made by Kohav Buskila - browse the git for more info: https://github.com/Scaleup-Excellenteam/exercise-2-3-implement-shell-FlyLeaff/tree/Working_Branch";
+    cout << "Made by Kohav Buskila - browse the git for more info: https://github.com/Scaleup-Excellenteam/exercise-2-3-implement-shell-FlyLeaff/tree/main";
 }
