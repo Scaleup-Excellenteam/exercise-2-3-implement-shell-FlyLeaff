@@ -46,13 +46,15 @@ void Shell::updateJobStatus()
             perror("waitpid failed");
             it = bgJobs.erase(it);
         } else {
-            if (WIFEXITED(status) || WIFSIGNALED(status)) {
-                it->second.status = "Stopped";
-            }
-            ++it;
+            if (WIFEXITED(status) || WIFSIGNALED(status)) // this signal is sent to a process when its controlling terminal is closed
+                it = bgJobs.erase(it); // no use in a stopped job in a currently running job list
+            else 
+                ++it;
+            
         }
     }
 }
+
 // this simply goes over the pid - string map and prints out the pid, command and status of each job
 void Shell::myJobs() 
 {
@@ -69,7 +71,7 @@ void Shell::myJobs()
 void Shell::inputLoop() 
 {
     while (true) {
-        char* input = readline("shell> ");
+        char* input = readline("");
         if (input == nullptr) break;
         
 
@@ -90,6 +92,16 @@ void Shell::inputLoop()
         if (command == "myhistory") 
         {
             myHistory();
+            continue;
+        }
+        if (command == "help") 
+        {
+            help();
+            continue;
+        }
+        if (command == "who") 
+        {
+            who();
             continue;
         }
 
@@ -153,8 +165,8 @@ void Shell::inputLoop()
 
 void Shell::run() 
 {
-    system("reset"); // this is in place due to an issue with my vscode terminal and can be removed
-    //TODO remove this shit
+    // system("reset"); // this is in place due to an issue with my vscode terminal and can be removed
+    // //TODO remove this shit
 
 
     Utils::resetHistoryFile();
@@ -169,4 +181,17 @@ void Shell::run()
 void Shell::myHistory() 
 {
     Utils::showHistory();
+}
+
+void Shell::help()
+{
+    cout << "Function list: \nhelp - displays this.\n'&' - end args in a '&' sign to run in background."
+    << endl << "myjobs - displays a list of currently running tasks in background."
+    << endl << "myhistory - display commands used since shell start.\n"
+    << endl << "who - displays credits and git link.";
+}
+
+void Shell::who()
+{
+    cout << "Made by Kohav Buskila - browse the git for more info: https://github.com/Scaleup-Excellenteam/exercise-2-3-implement-shell-FlyLeaff/tree/Working_Branch";
 }

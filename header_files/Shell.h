@@ -31,6 +31,8 @@ private:
     void myJobs();
     void inputLoop();
     void myHistory();
+    void help();
+    void who();
     
 };
 
