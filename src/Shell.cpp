@@ -70,96 +70,105 @@ void Shell::myJobs()
 // it checks for in program commands and also path commands
 void Shell::inputLoop() 
 {
-    while (true) {
-        char* input = readline("");
-        if (input == nullptr) break;
+    while (true) 
+    {
+        try
+        {
+            char* input = readline("");
+            if (input == nullptr) break;
+            
+
+
+            string command(input);
+            add_history(command.c_str());
+            Utils::addCommandToHistory(command);
         
 
 
-        string command(input);
-        add_history(command.c_str());
-        Utils::addCommandToHistory(command);
-      
-
-
-        if (command == "") continue;
-        if (command == "exit") break;
-        if (command == "myjobs") 
-        {
-            myJobs();
-            continue;
-        }
-        if (command == "myhistory") 
-        {
-            myHistory();
-            continue;
-        }
-        if (command == "help") 
-        {
-            help();
-            continue;
-        }
-        if (command == "who") 
-        {
-            who();
-            continue;
-        }
-
-        command = Utils::parseEnvironmentVariables(command);
-
-        //process command
-        vector<string> args;
-        parseCommand(command, args);
-        bool runInBackground = false;
-        if (!args.empty() && args.back().back() == '&') 
-        {
-            runInBackground = true;
-            if (args.back().length() == 1) {
-                args.pop_back();
-            } else {
-                args.back().pop_back();
+            if (command == "") continue;
+            if (command == "exit") break;
+            if (command == "myjobs") 
+            {
+                myJobs();
+                continue;
             }
-        }
+            if (command == "myhistory") 
+            {
+                myHistory();
+                continue;
+            }
+            if (command == "help") 
+            {
+                help();
+                continue;
+            }
+            if (command == "who") 
+            {
+                who();
+                continue;
+            }
+
+            command = Utils::parseEnvironmentVariables(command);
+
+            //process command
+            vector<string> args;
+            parseCommand(command, args);
+            bool runInBackground = false;
+            if (!args.empty() && args.back().back() == '&') 
+            {
+                runInBackground = true;
+                if (args.back().length() == 1) {
+                    args.pop_back();
+                } else {
+                    args.back().pop_back();
+                }
+            }
 
 
-        //check in path for command
-        string fullPath;
-        if (!Utils::findExe(args[0], fullPath)) 
+            //check in path for command
+            string fullPath;
+            if (!Utils::findExe(args[0], fullPath)) 
+            {
+                cerr << "Command not found: " << args[0] << endl;
+                continue;
+            }
+
+            vector<char*> c_args;
+            for (const auto& arg : args) 
+                c_args.push_back(const_cast<char*>(arg.c_str()));
+            
+            c_args.push_back(nullptr);
+
+
+            //fork to child process and execute via execv
+            pid_t pID = fork();
+            switch (pID) 
+            {
+                case -1:
+                    perror("fork failed");
+                    break;
+                case 0:
+                    setpgrp();
+                    execv(fullPath.c_str(), c_args.data());
+                    perror("execv failed");
+                    exit(-1);
+                default:
+                    if (runInBackground) 
+                    {
+                        addJob(pID, command);
+                        cout << "Running process in background, PID: " << pID << endl;
+                    } 
+                    else 
+                        waitpid(pID, nullptr, 0);
+                    
+                    break;
+            }
+
+        } catch (const exception& e) 
         {
-            cerr << "Command not found: " << args[0] << endl;
-            continue;
+            cerr << "Command not found" << endl;
         }
-
-        vector<char*> c_args;
-        for (const auto& arg : args) 
-            c_args.push_back(const_cast<char*>(arg.c_str()));
         
-        c_args.push_back(nullptr);
-
-
-        //fork to child process and execute via execv
-        pid_t pID = fork();
-        switch (pID) 
-        {
-            case -1:
-                perror("fork failed");
-                break;
-            case 0:
-                setpgrp();
-                execv(fullPath.c_str(), c_args.data());
-                perror("execv failed");
-                exit(-1);
-            default:
-                if (runInBackground) 
-                {
-                    addJob(pID, command);
-                    cout << "Running process in background, PID: " << pID << endl;
-                } 
-                else 
-                    waitpid(pID, nullptr, 0);
-                
-                break;
-        }
     }
 }
 

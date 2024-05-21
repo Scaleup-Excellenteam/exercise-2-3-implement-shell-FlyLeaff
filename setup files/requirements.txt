@@ -3,4 +3,4 @@ g++
 gcc
 libtinfo6
 pkg-config
-
+cmake
