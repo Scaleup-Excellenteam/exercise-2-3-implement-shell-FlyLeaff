@@ -70,12 +70,13 @@ void Shell::myJobs()
 // it checks for in program commands and also path commands
 void Shell::inputLoop() 
 {
-    while (true) 
+    bool running = true;
+    while (running) 
     {
         try
         {
             char* input = readline("");
-            if (input == nullptr) break;
+            if (!input) break;
             
 
 
@@ -86,23 +87,27 @@ void Shell::inputLoop()
 
 
             if (command == "") continue;
-            if (command == "exit") break;
-            if (command == "myjobs") 
+            if (command == exitCmd) 
+            {
+                running = false;
+                break;
+            }
+            if (command == jobsCmd) 
             {
                 myJobs();
                 continue;
             }
-            if (command == "myhistory") 
+            if (command == historyCmd) 
             {
                 myHistory();
                 continue;
             }
-            if (command == "help") 
+            if (command == helpCmd) 
             {
                 help();
                 continue;
             }
-            if (command == "who") 
+            if (command == whoCmd)
             {
                 who();
                 continue;
@@ -113,10 +118,10 @@ void Shell::inputLoop()
             //process command
             vector<string> args;
             parseCommand(command, args);
-            bool runInBackground = false;
+            bool isRunningInBackground = false;
             if (!args.empty() && args.back().back() == '&') 
             {
-                runInBackground = true;
+                isRunningInBackground = true;
                 if (args.back().length() == 1) {
                     args.pop_back();
                 } else {
@@ -153,7 +158,7 @@ void Shell::inputLoop()
                     perror("execv failed");
                     exit(-1);
                 default:
-                    if (runInBackground) 
+                    if (isRunningInBackground) 
                     {
                         addJob(pID, command);
                         cout << "Running process in background, PID: " << pID << endl;
@@ -174,8 +179,6 @@ void Shell::inputLoop()
 
 void Shell::run() 
 {
-    // system("reset"); // this is in place due to an issue with my vscode terminal and can be removed
-    // //TODO remove this shit
 
 
     Utils::resetHistoryFile();
