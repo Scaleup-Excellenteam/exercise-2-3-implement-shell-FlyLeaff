@@ -74,6 +74,33 @@ void Shell::changeDirectory(const std::string &path)
 }
 
 
+bool Shell::selection(std::string command)
+{
+            if (command == "") 
+                return true;
+            if (command == jobsCmd) 
+            {
+                myJobs();
+                return true;
+            }
+            if (command == historyCmd) 
+            {
+                myHistory();
+                return true;
+            }
+            if (command == helpCmd) 
+            {
+                help();
+                return true;
+            }
+            if (command == whoCmd)
+            {
+                who();
+                return true;
+            }
+    return false;
+}
+
 // my main method for this shell program
 // it goes over the input string and processes it accordingly
 // it checks for in program commands and also path commands
@@ -95,30 +122,14 @@ void Shell::inputLoop()
         
 
 
-            if (command == "") continue;
+           
             if (command == exitCmd) 
             {
                 running = false;
                 break;
             }
-            if (command == jobsCmd) 
+            if (selection(command))
             {
-                myJobs();
-                continue;
-            }
-            if (command == historyCmd) 
-            {
-                myHistory();
-                continue;
-            }
-            if (command == helpCmd) 
-            {
-                help();
-                continue;
-            }
-            if (command == whoCmd)
-            {
-                who();
                 continue;
             }
 
