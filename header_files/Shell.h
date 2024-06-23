@@ -33,6 +33,16 @@ private:
     void myHistory();
     void help();
     void who();
+    void changeDirectory(const std::string &path);
+
+
+    const std::string prompt = "myshell> ";
+    const std::string exitCmd = "exit";
+    const std::string jobsCmd = "myjobs";
+    const std::string historyCmd = "myhistory";
+    const std::string helpCmd = "help";
+    const std::string whoCmd = "who";
+    const std::string cdCmd = "cd";  
     
 };
 

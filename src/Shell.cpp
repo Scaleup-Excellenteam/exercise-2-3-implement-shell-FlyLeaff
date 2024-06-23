@@ -64,6 +64,15 @@ void Shell::myJobs()
     }
 }
 
+void Shell::changeDirectory(const std::string &path)
+{
+    if (chdir(path.c_str()) == -1) 
+    {
+        perror("chdir failed");
+    }
+
+}
+
 
 // my main method for this shell program
 // it goes over the input string and processes it accordingly
@@ -129,7 +138,18 @@ void Shell::inputLoop()
                 }
             }
 
-
+            if (args[0] == cdCmd)   // direct to cd function
+            {
+                if (args.size() < 2) 
+                {
+                    cerr << "cd: missing argument" << endl;
+                } 
+                else 
+                {
+                    changeDirectory(args[1]);
+                }
+                continue;
+            }
             //check in path for command
             string fullPath;
             if (!Utils::findExe(args[0], fullPath)) 
