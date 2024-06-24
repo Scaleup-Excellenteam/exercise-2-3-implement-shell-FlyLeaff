@@ -25,7 +25,7 @@ private:
 
     std::map<pid_t, Job> bgJobs;
     
-    void parseCommand(const std::string &input, std::vector<std::string> &args);
+    void parseCommand(const std::string &input, std::vector<std::string> &args, std::string &inputFile,std::string &outputFile);
     void addJob(pid_t pid, const std::string &cmd);
     void updateJobStatus();
     void myJobs();
@@ -34,7 +34,7 @@ private:
     void help();
     void who();
     void changeDirectory(const std::string &path);
-
+    bool selection(std::string command);
 
     const std::string prompt = "myshell> ";
     const std::string exitCmd = "exit";

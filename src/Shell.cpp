@@ -18,12 +18,30 @@ namespace fs = filesystem;
 
 // this function takes a string and a vector of strings as input and parses
 // the string into tokens and stores them in the vector
-void Shell::parseCommand(const string &input, vector<string> &args) 
+void Shell::parseCommand(const string &input, vector<string> &args, string &inputFile, string &outputFile) 
 {
     stringstream ss(input);
     string token;
-    while (ss >> token) {
-        args.push_back(token);
+    while (ss >> token) 
+    {
+        if (token == "<") 
+        {
+            if (ss >> token) 
+            {
+                inputFile = token;
+            }
+        } 
+        else if (token == ">") 
+        {
+            if (ss >> token) 
+            {
+                outputFile = token;
+            }
+        } 
+        else 
+        {
+            args.push_back(token);
+        }
     }
 }
 
