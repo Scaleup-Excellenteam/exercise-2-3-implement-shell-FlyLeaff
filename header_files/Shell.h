@@ -37,6 +37,8 @@ private:
     bool selection(std::string command);
     void handleRedirection(const std::string &inputFile, const std::string &outputFile);
     void printPath();
+    void executeCommandsWithPipes(std::vector<std::string> &commands, bool isBackground);
+    void parsePipeline(const std::string &input, std::vector<std::string> &commands);
 
     const std::string prompt = "myshell> ";
     const std::string exitCmd = "exit";

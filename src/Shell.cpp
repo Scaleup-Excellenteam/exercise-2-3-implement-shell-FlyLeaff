@@ -21,30 +21,30 @@ namespace fs = filesystem;
 
 // this function takes a string and a vector of strings as input and parses
 // the string into tokens and stores them in the vector
-void Shell::parseCommand(const string &input, vector<string> &args, string &inputFile, string &outputFile) 
-{
-    stringstream ss(input);
-    string token;
-    while (ss >> token) 
-    {
-        if (token == "<") 
-        {
-            if (ss >> token) 
-            {
+// some changes were made to accept piplines and redirections but the concept remains the same generally
+void Shell::parseCommand(const std::string &input, std::vector<std::string> &args, std::string &inputFile, std::string &outputFile) {
+    std::stringstream ss(input);
+    std::string token;
+    while (ss >> token) {
+        if (token == "<") {
+            if (ss >> token) {
                 inputFile = token;
             }
-        } 
-        else if (token == ">") 
-        {
-            if (ss >> token) 
-            {
+        } else if (token == ">") {
+            if (ss >> token) {
                 outputFile = token;
             }
-        } 
-        else 
-        {
+        } else {
             args.push_back(token);
         }
+    }
+}
+
+void Shell::parsePipeline(const std::string &input, std::vector<std::string> &commands) {
+    std::stringstream ss(input);
+    std::string command;
+    while (getline(ss, command, '|')) {
+        commands.push_back(command);
     }
 }
 
@@ -132,6 +132,84 @@ void Shell::printPath()
             }
 }
 
+void Shell::executeCommandsWithPipes(std::vector<std::string> &commands, bool isBackground) {
+    int numCommands = commands.size();
+    int pipefds[2 * (numCommands - 1)];
+
+    for (int i = 0; i < numCommands - 1; i++) {
+        if (pipe(pipefds + i*2) < 0) {
+            perror("pipe");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int j = 0;
+    for (int i = 0; i < numCommands; i++) {
+        std::vector<std::string> args;
+        std::string inputFile, outputFile;
+        parseCommand(commands[i], args, inputFile, outputFile);
+
+        pid_t pid = fork();
+        if (pid == 0) {
+            if (i > 0) {
+                if (dup2(pipefds[j-2], 0) < 0) {  // Redirect stdin to the previous pipe's read end
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            if (i < numCommands - 1) {
+                if (dup2(pipefds[j+1], 1) < 0) {  // Redirect stdout to the next pipe's write end
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            for (int k = 0; k < 2 * (numCommands - 1); k++) {
+                close(pipefds[k]);
+            }
+
+            handleRedirection(inputFile, outputFile);
+
+            std::vector<char*> c_args;
+            for (const auto& arg : args) {
+                c_args.push_back(const_cast<char*>(arg.c_str()));
+            }
+            c_args.push_back(nullptr);
+
+            std::string fullPath;
+            if (!Utils::findExe(c_args[0], fullPath)) {
+                std::cerr << "Command not found: " << c_args[0] << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            execv(fullPath.c_str(), c_args.data());
+            perror("execv");
+            exit(EXIT_FAILURE);
+        } else if (pid < 0) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+        
+        if (i == numCommands - 1 && isBackground) {
+            addJob(pid, commands[i]);
+        }
+
+        j += 2;
+    }
+
+    for (int i = 0; i < 2 * (numCommands - 1); i++) {
+        close(pipefds[i]);
+    }
+
+    if (!isBackground) {
+        for (int i = 0; i < numCommands; i++) {
+            wait(NULL);
+        }
+    }
+}
+
+// this function takes two strings as input and redirects the input and output of the shell to the files
 void Shell::handleRedirection(const std::string &inputFile, const std::string &outputFile)
 {
     if (!inputFile.empty()) 
@@ -162,85 +240,75 @@ void Shell::handleRedirection(const std::string &inputFile, const std::string &o
 // my main method for this shell program
 // it goes over the input string and processes it accordingly
 // it checks for in program commands and also path commands
-void Shell::inputLoop() 
-{
+void Shell::inputLoop() {
     bool running = true;
-    while (running) 
-    {
-        try
-        {
+    while (running) {
+        try {
             printPath();
 
             char* input = readline("");
             if (!input) break;
-            
 
-
-            string command(input);
+            std::string command(input);
             add_history(command.c_str());
             Utils::addCommandToHistory(command);
-        
 
-
-           
-            if (command == exitCmd) 
-            {
+            if (command == exitCmd) {
                 running = false;
                 break;
             }
-            if (selection(command))
-            {
+            if (selection(command)) {
                 continue;
             }
 
             command = Utils::parseEnvironmentVariables(command);
 
-            //process command
-            vector<string> args;
-            string inputFile, outputFile;
-            parseCommand(command, args, inputFile, outputFile);
             bool isRunningInBackground = false;
-            if (!args.empty() && args.back().back() == '&') 
-            {
+            if (!command.empty() && command.back() == '&') {
                 isRunningInBackground = true;
-                if (args.back().length() == 1) {
-                    args.pop_back();
-                } else {
-                    args.back().pop_back();
+                command.pop_back();
+                if (!command.empty() && command.back() == ' ') {
+                    command.pop_back();
                 }
             }
 
-            if (args[0] == cdCmd)   // direct to cd function
-            {
-                if (args.size() < 2) 
-                {
-                    cerr << "cd: missing argument" << endl;
-                } 
-                else 
-                {
+            std::vector<std::string> args;
+            std::string inputFile, outputFile;
+            std::vector<std::string> commands;
+            parsePipeline(command, commands);
+
+            if (commands.size() > 1) {
+                executeCommandsWithPipes(commands, isRunningInBackground);
+                continue;
+            }
+
+            parseCommand(command, args, inputFile, outputFile);
+
+            if (args.empty()) continue;
+
+            if (args[0] == cdCmd) {
+                if (args.size() < 2) {
+                    std::cerr << "cd: missing argument" << std::endl;
+                } else {
                     changeDirectory(args[1]);
                 }
                 continue;
             }
-            //check in path for command
-            string fullPath;
-            if (!Utils::findExe(args[0], fullPath)) 
-            {
-                cerr << "Command not found: " << args[0] << endl;
+
+            std::string fullPath;
+            if (!Utils::findExe(args[0], fullPath)) {
+                std::cerr << "Command not found: " << args[0] << std::endl;
                 continue;
             }
 
-            vector<char*> c_args;
-            for (const auto& arg : args) 
+            std::vector<char*> c_args;
+            for (const auto& arg : args) {
                 c_args.push_back(const_cast<char*>(arg.c_str()));
-            
+            }
             c_args.push_back(nullptr);
 
-
-            //fork to child process and execute via execv
             pid_t pID = fork();
-            switch (pID) 
-            {
+            switch (pID) {
                 case -1:
                     perror("fork failed");
                     break;
@@ -251,22 +319,18 @@ void Shell::inputLoop()
                     perror("execv failed");
                     exit(-1);
                 default:
-                    if (isRunningInBackground) 
-                    {
+                    if (isRunningInBackground) {
                         addJob(pID, command);
-                        cout << "Running process in background, PID: " << pID << endl;
-                    } 
-                    else 
+                        std::cout << "Running process in background, PID: " << pID << std::endl;
+                    } else {
                         waitpid(pID, nullptr, 0);
-                    
+                    }
                     break;
             }
 
-        } catch (const exception& e) 
-        {
-            cerr << "Command not found" << endl;
+        } catch (const std::exception& e) {
+            std::cerr << "Command not found" << std::endl;
         }
-        
     }
 }
 
