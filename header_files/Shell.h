@@ -35,6 +35,8 @@ private:
     void who();
     void changeDirectory(const std::string &path);
     bool selection(std::string command);
+    void handleRedirection(const std::string &inputFile, const std::string &outputFile);
+    void printPath();
 
     const std::string prompt = "myshell> ";
     const std::string exitCmd = "exit";

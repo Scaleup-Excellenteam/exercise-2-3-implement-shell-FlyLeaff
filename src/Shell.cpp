@@ -10,6 +10,9 @@
 #include <thread>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <limits.h>
 
 using namespace std;
 namespace fs = filesystem;
@@ -119,6 +122,43 @@ bool Shell::selection(std::string command)
     return false;
 }
 
+void Shell::printPath()
+{
+                char cwd[PATH_MAX];
+            if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                std::cout << cwd << " " << prompt;
+            } else {
+                perror("getcwd failed");
+            }
+}
+
+void Shell::handleRedirection(const std::string &inputFile, const std::string &outputFile)
+{
+    if (!inputFile.empty()) 
+    {
+        int fd = open(inputFile.c_str(), O_RDONLY); 
+        if (fd == -1) 
+        {
+            perror("open input file failed");
+            exit(-1);
+        }
+        dup2(fd, STDIN_FILENO);  // Redirect STDIN
+        close(fd);
+    }
+
+    if (!outputFile.empty()) 
+    {
+        int fd = open(outputFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644); //readonly , truncates the file to 0 , 0644 is the permission for the file
+        if (fd == -1) 
+        {
+            perror("open output file failed");
+            exit(-1);
+        }
+        dup2(fd, STDOUT_FILENO);  // Redirect STDOUT
+        close(fd);
+    }
+}
+
 // my main method for this shell program
 // it goes over the input string and processes it accordingly
 // it checks for in program commands and also path commands
@@ -129,6 +169,8 @@ void Shell::inputLoop()
     {
         try
         {
+            printPath();
+
             char* input = readline("");
             if (!input) break;
             
@@ -155,7 +197,8 @@ void Shell::inputLoop()
 
             //process command
             vector<string> args;
-            parseCommand(command, args);
+            string inputFile, outputFile;
+            parseCommand(command, args, inputFile, outputFile);
             bool isRunningInBackground = false;
             if (!args.empty() && args.back().back() == '&') 
             {
@@ -203,6 +246,7 @@ void Shell::inputLoop()
                     break;
                 case 0:
                     setpgrp();
+                    handleRedirection(inputFile, outputFile);
                     execv(fullPath.c_str(), c_args.data());
                     perror("execv failed");
                     exit(-1);
